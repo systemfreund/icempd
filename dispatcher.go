@@ -43,11 +43,11 @@ func (d *MpdDispatcher) CallNextFilter(req *Request, resp *Response, filterChain
 }
 
 func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req *Request, resp *Response, filterChain []FilterFunc) *Response {
-	logger.Println("CatchMpdAckErrorsFilter")
+	logger.Debug("CatchMpdAckErrorsFilter")
 	return d.CallNextFilter(req, resp, filterChain)
 }
 
 func (d *MpdDispatcher) AuthenticateFilter(req *Request, resp *Response, filterChain []FilterFunc) *Response {
-	logger.Println("AuthenticateFilter")
-	return resp
+	logger.Debug("AuthenticateFilter")
+	return d.CallNextFilter(req, resp, filterChain)
 }

@@ -3,13 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"github.com/op/go-logging"
 )
 
-var logger = log.New(os.Stderr, "", 0)
+var logger = logging.MustGetLogger("icempd")
 
 const (
 	PROTOCOL_ENCODING = "UTF-8"
@@ -32,7 +31,7 @@ func (s *MpdSession) HandleEvents() {
 	reader := bufio.NewScanner(s.conn)
 	for reader.Scan() {
 		req := Request(reader.Text())
-		logger.Printf("< %s\n", req)
+		logger.Debug("< %s\n", req)
 		s.dispatcher.HandleRequest(&req, 0)
 	}
 }
@@ -43,14 +42,14 @@ func main() {
 	checkError(err)
 
 	for {
-		logger.Println("Listening for new connection")
+		logger.Debug("Wait")
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Printf("Connection failed: %s", err.Error())
+			logger.Warning("Connection failed: %s", err.Error())
 			continue
 		}
 
-		logger.Printf("New connection from %s\n", conn.RemoteAddr())
+		logger.Debug("New connection %s\n", conn.RemoteAddr())
 		dispatcher := new(MpdDispatcher)
 
 		session := MpdSession{conn, dispatcher}
@@ -59,7 +58,7 @@ func main() {
 }
 
 func closeConn(conn net.Conn) {
-	logger.Printf("Closing connection from %s\n", conn.RemoteAddr())
+	logger.Debug("Close connection %s\n", conn.RemoteAddr())
 	defer conn.Close()
 }
 
