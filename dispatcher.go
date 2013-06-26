@@ -13,6 +13,7 @@ type Response struct {
 type FilterFunc func(req *Request, resp *Response, filterChain []FilterFunc) *Response
 
 type MpdDispatcher struct {
+	Config Configuration
 	Authenticated bool
 	CommandListReceiving bool
 	CommandListOk bool
@@ -51,6 +52,9 @@ func (d *MpdDispatcher) AuthenticateFilter(req *Request, resp *Response, filterC
 	logger.Debug("AuthenticateFilter")
 
 	if d.Authenticated {
+		return d.CallNextFilter(req, resp, filterChain)
+	} else if d.Config.Mpd.Password == "" {
+		d.Authenticated = true
 		return d.CallNextFilter(req, resp, filterChain)
 	} else {
 		return d.CallNextFilter(req, resp, filterChain)

@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"os"
 	"github.com/op/go-logging"
 	"code.google.com/p/gcfg"
 )
 
 var logger = logging.MustGetLogger("icempd")
-var config = Config{}
 
 const (
 	PROTOCOL_ENCODING = "UTF-8"
@@ -19,8 +17,9 @@ const (
 	MSG_PASSWORD = "password"
 )
 
-type Config struct {
+type Configuration struct {
 	Mpd struct {
+		Listen string
 		Password string
 	}
 }
@@ -44,15 +43,18 @@ func (s *MpdSession) HandleEvents() {
 	}
 }
 
-func loadConfig() {
-	gcfg.ReadFileInto(&config, "icempd.conf")
+func loadConfig() Configuration {
+	result := Configuration{}
+	err := gcfg.ReadFileInto(&result, "icempd.conf")
+	if err != nil {
+		logger.Fatalf("Configuration error: %s", err)
+	}
+	return result
 }
 
 func main() {
-	loadConfig()
-
-	service := ":6600"
-	listener, err := net.Listen("tcp", service)
+	config := loadConfig()
+	listener, err := net.Listen("tcp", config.Mpd.Listen)
 	checkError(err)
 
 	for {
@@ -64,7 +66,7 @@ func main() {
 		}
 
 		logger.Debug("New connection %s\n", conn.RemoteAddr())
-		dispatcher := new(MpdDispatcher)
+		dispatcher := &MpdDispatcher{Config: config}
 
 		session := MpdSession{conn, dispatcher}
 		go session.HandleEvents()
@@ -78,7 +80,6 @@ func closeConn(conn net.Conn) {
 
 func checkError(err error) {
 	if err != nil {
-		logger.Fatal("Fatal error: %s\n", err.Error())
-		os.Exit(1)
+		logger.Fatalf("Fatal error: %s", err.Error())
 	}
 }
