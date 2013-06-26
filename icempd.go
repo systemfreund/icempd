@@ -6,9 +6,11 @@ import (
 	"net"
 	"os"
 	"github.com/op/go-logging"
+	"code.google.com/p/gcfg"
 )
 
 var logger = logging.MustGetLogger("icempd")
+var config = Config{}
 
 const (
 	PROTOCOL_ENCODING = "UTF-8"
@@ -16,6 +18,12 @@ const (
 
 	MSG_PASSWORD = "password"
 )
+
+type Config struct {
+	Mpd struct {
+		Password string
+	}
+}
 
 type MpdSession struct {
 	conn net.Conn
@@ -36,7 +44,13 @@ func (s *MpdSession) HandleEvents() {
 	}
 }
 
+func loadConfig() {
+	gcfg.ReadFileInto(&config, "icempd.conf")
+}
+
 func main() {
+	loadConfig()
+
 	service := ":6600"
 	listener, err := net.Listen("tcp", service)
 	checkError(err)

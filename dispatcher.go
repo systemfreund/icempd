@@ -13,7 +13,7 @@ type Response struct {
 type FilterFunc func(req *Request, resp *Response, filterChain []FilterFunc) *Response
 
 type MpdDispatcher struct {
-	authenticated bool
+	Authenticated bool
 	CommandListReceiving bool
 	CommandListOk bool
 	CommandList list.List
@@ -49,5 +49,10 @@ func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req *Request, resp *Response, fi
 
 func (d *MpdDispatcher) AuthenticateFilter(req *Request, resp *Response, filterChain []FilterFunc) *Response {
 	logger.Debug("AuthenticateFilter")
-	return d.CallNextFilter(req, resp, filterChain)
+
+	if d.Authenticated {
+		return d.CallNextFilter(req, resp, filterChain)
+	} else {
+		return d.CallNextFilter(req, resp, filterChain)
+	}
 }
