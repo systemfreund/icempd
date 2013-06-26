@@ -14,7 +14,18 @@ const (
 	PROTOCOL_ENCODING = "UTF-8"
 	PROTOCOL_VERSION = "0.17.0"
 
-	MSG_PASSWORD = "password"
+    ACK_ERROR_NOT_LIST = 1
+    ACK_ERROR_ARG = 2
+    ACK_ERROR_PASSWORD = 3
+    ACK_ERROR_PERMISSION = 4
+    ACK_ERROR_UNKNOWN = 5
+    ACK_ERROR_NO_EXIST = 50
+    ACK_ERROR_PLAYLIST_MAX = 51
+    ACK_ERROR_SYSTEM = 52
+    ACK_ERROR_PLAYLIST_LOAD = 53
+    ACK_ERROR_UPDATE_ALREADY = 54
+    ACK_ERROR_PLAYER_SYNC = 55
+    ACK_ERROR_EXIST = 56
 )
 
 type Configuration struct {
@@ -24,22 +35,41 @@ type Configuration struct {
 	}
 }
 
+type MpdAckError struct {
+	Code int
+	Index int
+	Command string
+	Message string
+}
+
+func (e MpdAckError) Error() string {
+	return e.Message
+}
+
+func (e *MpdAckError) AckString() string {
+	return fmt.Sprintf("ACK [%d@%d] {%s} %s", e.Code, e.Index, e.Command, e.Message)
+}
+
 type MpdSession struct {
-	conn net.Conn
-	dispatcher *MpdDispatcher
+	Conn net.Conn
+	Dispatcher *MpdDispatcher
 }
 
 func (s *MpdSession) HandleEvents() {
-	defer closeConn(s.conn)
+	defer closeConn(s.Conn)
 
 	// A new connection has been established, send welcome message
-	s.conn.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
+	s.Conn.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
 
-	reader := bufio.NewScanner(s.conn)
+	reader := bufio.NewScanner(s.Conn)
 	for reader.Scan() {
-		req := Request(reader.Text())
-		logger.Debug("< %s\n", req)
-		s.dispatcher.HandleRequest(&req, 0)
+		req := reader.Text()
+		logger.Debug("%s --> %s", s.Conn.RemoteAddr(), req)
+		resp, _ := s.Dispatcher.HandleRequest(req, 0)
+
+		if resp.Len() > 0 {
+			logger.Debug("%s <-- %s", s.Conn.RemoteAddr(), resp.Front().Value)	
+		}
 	}
 }
 
