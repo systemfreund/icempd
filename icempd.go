@@ -20,6 +20,9 @@ type MpdSession struct {
 func (s *MpdSession) HandleEvents() {
 	defer closeConn(s.conn)
 
+	// A new connection has been established, send welcome message
+	s.conn.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
+
 	reader := bufio.NewScanner(s.conn)
 	for reader.Scan() {
 		fmt.Fprintf(os.Stdout, "Got: '%s'\n", reader.Text())
