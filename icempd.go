@@ -2,19 +2,25 @@ package main
 
 import (
 	"bufio"
-	"net"
-	//"net/textproto"
-	"os"
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"github.com/op/go-logging"
 )
+
+var logger = log.New(os.Stderr, "", 0)
 
 const (
 	PROTOCOL_ENCODING = "UTF-8"
 	PROTOCOL_VERSION = "0.17.0"
+
+	MSG_PASSWORD = "password"
 )
 
 type MpdSession struct {
 	conn net.Conn
+	dispatcher *MpdDispatcher
 }
 
 func (s *MpdSession) HandleEvents() {
@@ -25,7 +31,9 @@ func (s *MpdSession) HandleEvents() {
 
 	reader := bufio.NewScanner(s.conn)
 	for reader.Scan() {
-		fmt.Fprintf(os.Stdout, "Got: '%s'\n", reader.Text())
+		req := Request(reader.Text())
+		logger.Printf("< %s\n", req)
+		s.dispatcher.HandleRequest(&req, 0)
 	}
 }
 
@@ -35,27 +43,29 @@ func main() {
 	checkError(err)
 
 	for {
-		fmt.Fprintf(os.Stdout, "Listening for new connection\n")
+		logger.Println("Listening for new connection")
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Couldn't accept connection: %s", err.Error())
+			logger.Printf("Connection failed: %s", err.Error())
 			continue
 		}
 
-		fmt.Fprintf(os.Stdout, "New connection from %s\n", conn.RemoteAddr())
-		session := MpdSession{conn}
+		logger.Printf("New connection from %s\n", conn.RemoteAddr())
+		dispatcher := new(MpdDispatcher)
+
+		session := MpdSession{conn, dispatcher}
 		go session.HandleEvents()
 	}
 }
 
 func closeConn(conn net.Conn) {
-	fmt.Fprintf(os.Stdout, "Closing connection from %s\n", conn.RemoteAddr())
+	logger.Printf("Closing connection from %s\n", conn.RemoteAddr())
 	defer conn.Close()
 }
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s\n", err.Error())
+		logger.Fatal("Fatal error: %s\n", err.Error())
 		os.Exit(1)
 	}
 }
