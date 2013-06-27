@@ -4,13 +4,25 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"github.com/op/go-logging"
 	"code.google.com/p/gcfg"
 )
 
-var logger = logging.MustGetLogger("icempd")
+const (
+	LOGGER_NAME = "icempd"
+)
+
+var (
+	logger = logging.MustGetLogger(LOGGER_NAME)
+	config Configuration
+) 
 
 type Configuration struct {
+	Logging struct {
+		Level int
+	}
+
 	Mpd struct {
 		Listen string
 		Password string
@@ -60,12 +72,12 @@ func (s *MpdSession) HandleEvents() {
 	reader := bufio.NewScanner(s.Conn)
 	for reader.Scan() {
 		req := reader.Text()
-		logger.Debug("%s --> %s", s.Conn.RemoteAddr(), req)
+		logger.Info("%s --> %s", s.Conn.RemoteAddr(), req)
 		resp, _ := s.Dispatcher.HandleRequest(req, 0)
 
 		for _, line := range resp {
-			logger.Debug("%s <-- %s", s.Conn.RemoteAddr(), line)	
-			//s.Conn.Write([]byte(line))
+			logger.Info("%s <-- %s", s.Conn.RemoteAddr(), line)	
+			s.Conn.Write(append([]byte(line), '\n'))
 		}
 	}
 }
@@ -74,16 +86,22 @@ func loadConfig() Configuration {
 	result := Configuration{}
 	err := gcfg.ReadFileInto(&result, "icempd.conf")
 	if err != nil {
-		logger.Fatalf("Configuration error: %s", err)
+		fmt.Printf("Configuration error: %s", err)
+		os.Exit(1)
 	}
 	return result
 }
 
+func init() {
+	config = loadConfig()
+	logging.SetLevel(logging.Level(config.Logging.Level), LOGGER_NAME)
+}
+
 func main() {
-	config := loadConfig()
 	listener, err := net.Listen("tcp", config.Mpd.Listen)
 	checkError(err)
 
+	logger.Info("Listen at %s", config.Mpd.Listen)
 	for {
 		logger.Debug("Wait")
 		conn, err := listener.Accept()
@@ -92,7 +110,7 @@ func main() {
 			continue
 		}
 
-		logger.Debug("New connection %s\n", conn.RemoteAddr())
+		logger.Info("New connection %s\n", conn.RemoteAddr())
 
 		session := NewMpdSession(conn, config)
 		go session.HandleEvents()
@@ -100,7 +118,7 @@ func main() {
 }
 
 func closeConn(conn net.Conn) {
-	logger.Debug("Close connection %s\n", conn.RemoteAddr())
+	logger.Info("Close connection %s\n", conn.RemoteAddr())
 	defer conn.Close()
 }
 

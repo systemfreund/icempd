@@ -11,8 +11,8 @@ type MpdDispatcher struct {
 	Session *MpdSession
 
 	Authenticated bool
-	CommandListReceiving bool
-	CommandListOk bool
+	commandListReceiving bool
+	commandListOk bool
 	commandList []string
 	commandListIndex int
 }
@@ -21,7 +21,7 @@ func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]stri
 	logger.Debug("HandleRequest: %s", req)
 	d.commandListIndex = curCommandListIdx;
 
-	response := []string {};
+	response := []string{};
 	filterChain := []FilterFunc { 
 		d.CatchMpdAckErrorsFilter, 
 		d.AuthenticateFilter,
@@ -104,11 +104,11 @@ func (d *MpdDispatcher) CommandListFilter(req string, resp []string, filterChain
 }
 
 func (d *MpdDispatcher) isReceivingCommandList(req string) bool {
-	return d.CommandListReceiving && req != "command_list_end"
+	return d.commandListReceiving && req != "command_list_end"
 }
 
 func (d *MpdDispatcher) isProcessingCommandList(req string) bool {
-	return d.commandListIndex != -1 && req != "command_list_end"
+	return d.commandListIndex != 0 && req != "command_list_end"
 }
 
 func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
@@ -126,7 +126,7 @@ func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []Fil
 }
 
 func (d *MpdDispatcher) hasError(resp []string) bool {
-	return len(resp) > 0 && strings.HasPrefix(resp[len(resp) - 1], "ACK")
+	return resp != nil && (len(resp) > 0 && strings.HasPrefix(resp[len(resp) - 1], "ACK"))
 }
 
 func (d *MpdDispatcher) CallHandlerFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {

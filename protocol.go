@@ -33,8 +33,6 @@ type MpdCommand struct {
 var MPD_COMMANDS map[string]MpdCommand
 
 func init() {
-	logger.Debug("Initialize protocol")	
-
 	MPD_COMMANDS = map[string]MpdCommand {
 		"ping": MpdCommand{false, ping, regexp.MustCompile("^ping$")},
 		"password": MpdCommand{false, ping, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
