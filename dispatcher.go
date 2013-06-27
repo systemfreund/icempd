@@ -25,6 +25,7 @@ func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]stri
 		d.CatchMpdAckErrorsFilter, 
 		d.AuthenticateFilter,
 		d.CommandListFilter,
+		d.AddOkFilter,
 	}
 
 	return d.CallNextFilter(req, response, filterChain)
@@ -106,4 +107,22 @@ func (d *MpdDispatcher) isReceivingCommandList(req string) bool {
 
 func (d *MpdDispatcher) isProcessingCommandList(req string) bool {
 	return d.CommandListIndex != -1 && req != "command_list_end"
+}
+
+func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+	logger.Debug("AddOkFilter")
+
+	resp, err := d.CallNextFilter(req, resp, filterChain)
+
+	if err != nil {
+		return resp, err
+	} else if !d.hasError(resp) {
+		resp = append(resp, "OK")
+	}
+	
+	return resp, nil
+}
+
+func (d *MpdDispatcher) hasError(resp []string) bool {
+	return len(resp) > 0 && strings.HasPrefix(resp[len(resp) - 1], "ACK")
 }
