@@ -12,20 +12,25 @@ type MpdDispatcher struct {
 	Authenticated bool
 	CommandListReceiving bool
 	CommandListOk bool
-	CommandList []string
-	CommandListIndex int
+	commandList []string
+	commandListIndex int
+}
+
+type MpdContext struct {
+	
 }
 
 func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]string, error) {
-	d.CommandListIndex = curCommandListIdx;
+	logger.Debug("HandleRequest: %s", req)
+	d.commandListIndex = curCommandListIdx;
 
 	response := []string {};
-
 	filterChain := []FilterFunc { 
 		d.CatchMpdAckErrorsFilter, 
 		d.AuthenticateFilter,
 		d.CommandListFilter,
 		d.AddOkFilter,
+		d.CallHandlerFilter,
 	}
 
 	return d.CallNextFilter(req, response, filterChain)
@@ -46,8 +51,8 @@ func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp []string, filte
 
 	if err != nil {
 		ackErr := err.(MpdAckError)
-		if d.CommandListIndex < 0 {
-			ackErr.Index = d.CommandListIndex
+		if d.commandListIndex < 0 {
+			ackErr.Index = d.commandListIndex
 		}
 
 		resp = []string { ackErr.AckString() }
@@ -84,7 +89,7 @@ func (d *MpdDispatcher) CommandListFilter(req string, resp []string, filterChain
 
 	if d.isReceivingCommandList(req) {
 		logger.Debug("CommandListFilter append to command list")
-		d.CommandList = append(d.CommandList, req)
+		d.commandList = append(d.commandList, req)
 		return []string {}, nil
 	} else {
 		resp, err := d.CallNextFilter(req, resp, filterChain)
@@ -106,7 +111,7 @@ func (d *MpdDispatcher) isReceivingCommandList(req string) bool {
 }
 
 func (d *MpdDispatcher) isProcessingCommandList(req string) bool {
-	return d.CommandListIndex != -1 && req != "command_list_end"
+	return d.commandListIndex != -1 && req != "command_list_end"
 }
 
 func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
@@ -125,4 +130,51 @@ func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []Fil
 
 func (d *MpdDispatcher) hasError(resp []string) bool {
 	return len(resp) > 0 && strings.HasPrefix(resp[len(resp) - 1], "ACK")
+}
+
+func (d *MpdDispatcher) CallHandlerFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+	logger.Debug("CallHandlerFilter")
+
+	cmd, params, err := d.findMpdCommand(req)
+	if err != nil {
+		return []string{}, err
+	}
+
+	logger.Debug("Calling handler for %q, %q", cmd, params)
+
+	return []string{}, nil
+}
+
+func (d *MpdDispatcher) findMpdCommand(req string) (*MpdCommand, map[string]string, error) {
+	commandName := strings.Split(req, " ")[0]
+	mpdCommand, ok := MPD_COMMANDS[commandName]
+
+	if ok {
+		matches := mpdCommand.Pattern.FindStringSubmatch(req)
+
+		if matches == nil {
+			return &mpdCommand, nil, MpdAckError{
+				Code: ACK_ERROR_ARG,
+				Command: commandName,
+				Message: "incorrect arguments",
+			}
+		}
+
+		// Convert to parameter map
+		params := map[string]string {}
+		groups := mpdCommand.Pattern.SubexpNames()[1:]
+		for i, group := range groups {
+			params[group] = matches[i + 1]
+		}
+		
+		logger.Info("COMMAND:%s ARGUMENTS:%q", commandName, params)
+
+		return &mpdCommand, params, nil
+	}
+
+	return nil, nil, MpdAckError{
+		Code: ACK_ERROR_UNKNOWN,
+		Command: commandName,
+		Message: fmt.Sprintf("unknown command \"%s\"", commandName),
+	}
 }
