@@ -34,18 +34,44 @@ var MPD_COMMANDS map[string]MpdCommand
 
 func init() {
 	MPD_COMMANDS = map[string]MpdCommand {
-		"ping": MpdCommand{false, ping, regexp.MustCompile("^ping$")},
-		"password": MpdCommand{false, ping, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
-		"test": MpdCommand{true, ping, regexp.MustCompile("^test$")},
+		// Connection
+		   "close": MpdCommand{false, closeMpdConn, regexp.MustCompile("^close$")},
+		    "ping": MpdCommand{false, ping, regexp.MustCompile("^ping$")},
+		"password": MpdCommand{false, password, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
+
+		// Status
+		   "status": MpdCommand{true, mpdStatus, regexp.MustCompile("^status$")},
 	}
 }
 
+func closeMpdConn(context *MpdSession, params map[string]string) ([]string, error) {
+	logger.Notice("CLOSE")
+	context.Conn.Close()
+	return nil, nil
+}
+
 func ping(context *MpdSession, params map[string]string) ([]string, error) {
-	logger.Notice("PING %q", params)
+	logger.Notice("PING")
 	return nil, nil
 }
 
 func password(context *MpdSession, params map[string]string) ([]string, error) {
 	logger.Notice("PASSWORD %s", params["password"])
+
+	if context.Config.Mpd.Password == params["password"] {
+		context.Dispatcher.Authenticated = true
+	} else {
+		return nil, MpdAckError{
+			Code: ACK_ERROR_PASSWORD,
+			Command: "password",
+			Message: "incorrect password",
+		}
+	}
+
+	return nil, nil
+}
+
+func mpdStatus(context *MpdSession, params map[string]string) ([]string, error) {
+	logger.Notice("STATS %s", params["password"])
 	return nil, nil
 }
