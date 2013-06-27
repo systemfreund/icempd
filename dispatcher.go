@@ -137,9 +137,12 @@ func (d *MpdDispatcher) CallHandlerFilter(req string, resp []string, filterChain
 		return []string{}, err
 	}
 
-	logger.Debug("Calling handler for %q, %q", cmd, params)
+	handlerResponse, err := cmd.Handler(d.Session, params)
+	if err != nil {
+		return []string{}, err
+	}
 
-	return []string{}, nil
+	return d.CallNextFilter(req, handlerResponse, filterChain)
 }
 
 func (d *MpdDispatcher) findMpdCommand(req string) (*MpdCommand, map[string]string, error) {
@@ -164,7 +167,7 @@ func (d *MpdDispatcher) findMpdCommand(req string) (*MpdCommand, map[string]stri
 			params[group] = matches[i + 1]
 		}
 		
-		logger.Info("COMMAND:%s ARGUMENTS:%q", commandName, params)
+		logger.Debug("COMMAND:%s ARGUMENTS:%q", commandName, params)
 
 		return &mpdCommand, params, nil
 	}

@@ -22,8 +22,11 @@ const (
     ACK_ERROR_EXIST = 56
 )
 
+type CommandHandlerFunc func(context *MpdSession, params map[string]string) ([]string, error)
+
 type MpdCommand struct {
 	AuthRequired bool
+	Handler CommandHandlerFunc
 	Pattern *regexp.Regexp
 }
 
@@ -33,12 +36,13 @@ func init() {
 	logger.Debug("Initialize protocol")	
 
 	MPD_COMMANDS = map[string]MpdCommand {
-		"ping": MpdCommand{false, regexp.MustCompile("^ping$")},
-		"password": MpdCommand{false, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
-		"test": MpdCommand{true, regexp.MustCompile("^test$")},
+		"ping": MpdCommand{false, ping, regexp.MustCompile("^ping$")},
+		"password": MpdCommand{false, ping, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
+		"test": MpdCommand{true, ping, regexp.MustCompile("^test$")},
 	}
 }
 
-func ping() {
-	
+func ping(context *MpdSession, params map[string]string) ([]string, error) {
+	logger.Info("PING %q", params)
+	return nil, nil
 }
