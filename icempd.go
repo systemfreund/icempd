@@ -55,6 +55,8 @@ type MpdSession struct {
 	Dispatcher *MpdDispatcher
 }
 
+var nl = []byte {'\n'}
+
 func (s *MpdSession) HandleEvents() {
 	defer closeConn(s.Conn)
 
@@ -67,8 +69,9 @@ func (s *MpdSession) HandleEvents() {
 		logger.Debug("%s --> %s", s.Conn.RemoteAddr(), req)
 		resp, _ := s.Dispatcher.HandleRequest(req, 0)
 
-		if resp.Len() > 0 {
-			logger.Debug("%s <-- %s", s.Conn.RemoteAddr(), resp.Front().Value)	
+		for _, line := range resp {
+			logger.Debug("%s <-- %s", s.Conn.RemoteAddr(), line)	
+			//s.Conn.Write([]byte(line))
 		}
 	}
 }

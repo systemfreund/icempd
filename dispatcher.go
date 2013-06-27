@@ -1,31 +1,25 @@
 package main
 
 import (
-	"container/list"
 	"fmt"
 	"strings"
 )
 
-type Response struct {
-	list.List
-}
-
-type FilterFunc func(req string, resp *Response, filterChain []FilterFunc) (*Response, error)
+type FilterFunc func(req string, resp []string, filterChain []FilterFunc) ([]string, error)
 
 type MpdDispatcher struct {
 	Config Configuration
 	Authenticated bool
 	CommandListReceiving bool
 	CommandListOk bool
-	CommandList list.List
+	CommandList []string
 	CommandListIndex int
 }
 
-func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) (*Response, error) {
+func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]string, error) {
 	d.CommandListIndex = curCommandListIdx;
 
-	response := new(Response)
-	response.Init()
+	response := []string {};
 
 	filterChain := []FilterFunc { 
 		d.CatchMpdAckErrorsFilter, 
@@ -36,7 +30,7 @@ func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) (*Respo
 	return d.CallNextFilter(req, response, filterChain)
 }
 
-func (d *MpdDispatcher) CallNextFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
+func (d *MpdDispatcher) CallNextFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	if len(filterChain) > 0 {
 		nextFilter := filterChain[0]
 		return nextFilter(req, resp, filterChain[1:])
@@ -45,7 +39,7 @@ func (d *MpdDispatcher) CallNextFilter(req string, resp *Response, filterChain [
 	}
 }
 
-func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
+func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	logger.Debug("CatchMpdAckErrorsFilter")
 	resp, err := d.CallNextFilter(req, resp, filterChain)
 
@@ -55,15 +49,13 @@ func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp *Response, filt
 			ackErr.Index = d.CommandListIndex
 		}
 
-		// Overwrite with error response
-		resp = new(Response)
-		resp.PushFront(ackErr.AckString())
+		resp = []string { ackErr.AckString() }
 	}
 
 	return resp, err
 }
 
-func (d *MpdDispatcher) AuthenticateFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
+func (d *MpdDispatcher) AuthenticateFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	logger.Debug("AuthenticateFilter")
 
 	if d.Authenticated {
@@ -86,7 +78,7 @@ func (d *MpdDispatcher) AuthenticateFilter(req string, resp *Response, filterCha
 	}
 }
 
-func (d *MpdDispatcher) CommandListFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
+func (d *MpdDispatcher) CommandListFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 /*	if d.isReceivingCommandList(req) {
 	} else {
 
