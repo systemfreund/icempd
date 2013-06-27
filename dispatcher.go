@@ -30,6 +30,7 @@ func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) (*Respo
 	filterChain := []FilterFunc { 
 		d.CatchMpdAckErrorsFilter, 
 		d.AuthenticateFilter,
+		d.CommandListFilter,
 	}
 
 	return d.CallNextFilter(req, response, filterChain)
@@ -47,10 +48,9 @@ func (d *MpdDispatcher) CallNextFilter(req string, resp *Response, filterChain [
 func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
 	logger.Debug("CatchMpdAckErrorsFilter")
 	resp, err := d.CallNextFilter(req, resp, filterChain)
-	var ackErr MpdAckError
 
 	if err != nil {
-		ackErr = err.(MpdAckError)
+		ackErr := err.(MpdAckError)
 		if d.CommandListIndex < 0 {
 			ackErr.Index = d.CommandListIndex
 		}
@@ -84,4 +84,20 @@ func (d *MpdDispatcher) AuthenticateFilter(req string, resp *Response, filterCha
 			}
 		}
 	}
+}
+
+func (d *MpdDispatcher) CommandListFilter(req string, resp *Response, filterChain []FilterFunc) (*Response, error) {
+/*	if d.isReceivingCommandList(req) {
+	} else {
+
+	}*/
+	return nil, nil
+}
+
+func (d *MpdDispatcher) isReceivingCommandList(req string) bool {
+	return d.CommandListReceiving && req != "command_list_end"
+}
+
+func (d *MpdDispatcher) isProcessingCommandList(req string) bool {
+	return d.CommandListIndex != -1 && req != "command_list_end"
 }
