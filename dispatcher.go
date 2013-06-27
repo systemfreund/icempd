@@ -79,11 +79,25 @@ func (d *MpdDispatcher) AuthenticateFilter(req string, resp []string, filterChai
 }
 
 func (d *MpdDispatcher) CommandListFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-/*	if d.isReceivingCommandList(req) {
-	} else {
+	logger.Debug("CommandListFilter")
 
-	}*/
-	return nil, nil
+	if d.isReceivingCommandList(req) {
+		logger.Debug("CommandListFilter append to command list")
+		d.CommandList = append(d.CommandList, req)
+		return []string {}, nil
+	} else {
+		resp, err := d.CallNextFilter(req, resp, filterChain)
+		
+		if err != nil {
+			return resp, err
+		} else if d.isReceivingCommandList(req) || d.isProcessingCommandList(req) {
+			if len(resp) > 0 && resp[len(resp) - 1] == "OK" {
+				resp = resp[:len(resp) - 1]
+			}
+		}
+
+		return resp, nil
+	}
 }
 
 func (d *MpdDispatcher) isReceivingCommandList(req string) bool {
