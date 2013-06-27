@@ -41,6 +41,11 @@ func init() {
 }
 
 func ping(context *MpdSession, params map[string]string) ([]string, error) {
-	logger.Info("PING %q", params)
+	logger.Notice("PING %q", params)
+	return nil, nil
+}
+
+func password(context *MpdSession, params map[string]string) ([]string, error) {
+	logger.Notice("PASSWORD %s", params["password"])
 	return nil, nil
 }

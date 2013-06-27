@@ -99,9 +99,12 @@ func init() {
 
 func main() {
 	listener, err := net.Listen("tcp", config.Mpd.Listen)
-	checkError(err)
+	if err != nil {
+		fmt.Printf("Fatal error: %s", err.Error())
+		os.Exit(2)
+	}
 
-	logger.Info("Listen at %s", config.Mpd.Listen)
+	logger.Notice("Listen at %s", config.Mpd.Listen)
 	for {
 		logger.Debug("Wait")
 		conn, err := listener.Accept()
@@ -120,10 +123,4 @@ func main() {
 func closeConn(conn net.Conn) {
 	logger.Info("Close connection %s\n", conn.RemoteAddr())
 	defer conn.Close()
-}
-
-func checkError(err error) {
-	if err != nil {
-		logger.Fatalf("Fatal error: %s", err.Error())
-	}
 }
