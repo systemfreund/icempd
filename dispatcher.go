@@ -8,16 +8,13 @@ import (
 type FilterFunc func(req string, resp []string, filterChain []FilterFunc) ([]string, error)
 
 type MpdDispatcher struct {
-	Config Configuration
+	Session *MpdSession
+
 	Authenticated bool
 	CommandListReceiving bool
 	CommandListOk bool
 	commandList []string
 	commandListIndex int
-}
-
-type MpdContext struct {
-	
 }
 
 func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]string, error) {
@@ -66,7 +63,7 @@ func (d *MpdDispatcher) AuthenticateFilter(req string, resp []string, filterChai
 
 	if d.Authenticated {
 		return d.CallNextFilter(req, resp, filterChain)
-	} else if d.Config.Mpd.Password == "" {
+	} else if d.Session.Config.Mpd.Password == "" {
 		d.Authenticated = true
 		return d.CallNextFilter(req, resp, filterChain)
 	} else {

@@ -34,7 +34,19 @@ func (e *MpdAckError) AckString() string {
 
 type MpdSession struct {
 	Conn net.Conn
-	Dispatcher *MpdDispatcher
+	Config Configuration
+	Dispatcher MpdDispatcher
+}
+
+func NewMpdSession(conn net.Conn, config Configuration) MpdSession {
+	result := MpdSession{
+		Conn: conn,
+		Config: config,
+	}
+
+	result.Dispatcher = MpdDispatcher{ Session: &result }
+
+	return result
 }
 
 var nl = []byte {'\n'}
@@ -81,9 +93,8 @@ func main() {
 		}
 
 		logger.Debug("New connection %s\n", conn.RemoteAddr())
-		dispatcher := &MpdDispatcher{Config: config}
 
-		session := MpdSession{conn, dispatcher}
+		session := NewMpdSession(conn, config)
 		go session.HandleEvents()
 	}
 }
