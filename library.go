@@ -14,7 +14,7 @@ type Tune struct {
 
 type Library struct {
 	path string
-	tuneChannel chan Tune
+	TuneChannel chan Tune
 }
 
 func NewLibrary(basePath string) Library {
@@ -42,7 +42,7 @@ func (l *Library) walkFunc(path string, info os.FileInfo, err error) error {
 
 		PopulateTune(&tune)
 
-		l.tuneChannel <- tune
+		l.TuneChannel <- tune
 	}
 
 	return nil

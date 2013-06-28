@@ -21,6 +21,7 @@ var (
 type Configuration struct {
 	Library struct {
 		Path string
+		DbPath string
 	}
 
 	Logging struct {
@@ -108,7 +109,8 @@ func main() {
 		os.Exit(2)
 	}
 
-	NewLibrary(config.Library.Path)
+	library := NewLibrary(config.Library.Path)
+	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
 
 	logger.Notice("Listen at %s", config.Mpd.Listen)
 	for {
