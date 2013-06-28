@@ -19,6 +19,10 @@ var (
 ) 
 
 type Configuration struct {
+	Library struct {
+		Path string
+	}
+
 	Logging struct {
 		Level int
 	}
@@ -103,6 +107,8 @@ func main() {
 		fmt.Printf("Fatal error: %s", err.Error())
 		os.Exit(2)
 	}
+
+	NewLibrary(config.Library.Path)
 
 	logger.Notice("Listen at %s", config.Mpd.Listen)
 	for {

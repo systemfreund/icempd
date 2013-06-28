@@ -72,6 +72,6 @@ func password(context *MpdSession, params map[string]string) ([]string, error) {
 }
 
 func mpdStatus(context *MpdSession, params map[string]string) ([]string, error) {
-	logger.Notice("STATS %s", params["password"])
+	logger.Notice("STATUS")
 	return nil, nil
 }
