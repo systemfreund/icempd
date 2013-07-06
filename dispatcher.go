@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"github.com/op/go-logging"
 )
 
 type FilterFunc func(req string, resp []string, filterChain []FilterFunc) ([]string, error)
@@ -15,10 +16,19 @@ type MpdDispatcher struct {
 	commandListOk bool
 	commandList []string
 	commandListIndex int
+
+	*logging.Logger
+}
+
+func NewMpdDispatcher(session *MpdSession) MpdDispatcher {
+	return MpdDispatcher{
+		Session: session,
+		Logger: logging.MustGetLogger(LOGGER_NAME),
+	}
 }
 
 func (d *MpdDispatcher) HandleRequest(req string, curCommandListIdx int) ([]string, error) {
-	logger.Debug("HandleRequest: %s", req)
+	d.Debug("HandleRequest: %s", req)
 	d.commandListIndex = curCommandListIdx;
 
 	response := []string{};
@@ -43,7 +53,7 @@ func (d *MpdDispatcher) CallNextFilter(req string, resp []string, filterChain []
 }
 
 func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-	logger.Debug("CatchMpdAckErrorsFilter")
+	d.Debug("CatchMpdAckErrorsFilter")
 	resp, err := d.CallNextFilter(req, resp, filterChain)
 
 	if err != nil {
@@ -59,7 +69,7 @@ func (d *MpdDispatcher) CatchMpdAckErrorsFilter(req string, resp []string, filte
 }
 
 func (d *MpdDispatcher) AuthenticateFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-	logger.Debug("AuthenticateFilter")
+	d.Debug("AuthenticateFilter")
 
 	if d.Authenticated {
 		return d.CallNextFilter(req, resp, filterChain)
@@ -82,10 +92,10 @@ func (d *MpdDispatcher) AuthenticateFilter(req string, resp []string, filterChai
 }
 
 func (d *MpdDispatcher) CommandListFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-	logger.Debug("CommandListFilter")
+	d.Debug("CommandListFilter")
 
 	if d.isReceivingCommandList(req) {
-		logger.Debug("CommandListFilter append to command list")
+		d.Debug("CommandListFilter append to command list")
 		d.commandList = append(d.commandList, req)
 		return []string {}, nil
 	} else {
@@ -112,7 +122,7 @@ func (d *MpdDispatcher) isProcessingCommandList(req string) bool {
 }
 
 func (d *MpdDispatcher) AddOkFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-	logger.Debug("AddOkFilter")
+	d.Debug("AddOkFilter")
 
 	resp, err := d.CallNextFilter(req, resp, filterChain)
 
@@ -130,7 +140,7 @@ func (d *MpdDispatcher) hasError(resp []string) bool {
 }
 
 func (d *MpdDispatcher) CallHandlerFilter(req string, resp []string, filterChain []FilterFunc) ([]string, error) {
-	logger.Debug("CallHandlerFilter")
+	d.Debug("CallHandlerFilter")
 
 	cmd, params, err := d.findMpdCommand(req)
 	if err != nil {
@@ -167,7 +177,7 @@ func (d *MpdDispatcher) findMpdCommand(req string) (*MpdCommand, map[string]stri
 			params[group] = matches[i + 1]
 		}
 		
-		logger.Debug("COMMAND:%s ARGUMENTS:%q", commandName, params)
+		d.Debug("COMMAND:%s ARGUMENTS:%q", commandName, params)
 
 		return &mpdCommand, params, nil
 	}

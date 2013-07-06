@@ -53,6 +53,8 @@ type MpdSession struct {
 	Conn net.Conn
 	Config Configuration
 	Dispatcher MpdDispatcher
+
+	*logging.Logger
 }
 
 func NewMpdSession(conn net.Conn, config Configuration) MpdSession {
@@ -61,7 +63,7 @@ func NewMpdSession(conn net.Conn, config Configuration) MpdSession {
 		Config: config,
 	}
 
-	result.Dispatcher = MpdDispatcher{ Session: &result }
+	result.Dispatcher = NewMpdDispatcher(&result)
 
 	return result
 }
@@ -77,11 +79,11 @@ func (s *MpdSession) HandleEvents() {
 	reader := bufio.NewScanner(s.Conn)
 	for reader.Scan() {
 		req := reader.Text()
-		logger.Info("%s --> %s", s.Conn.RemoteAddr(), req)
+		s.Info("%s --> %s", s.Conn.RemoteAddr(), req)
 		resp, _ := s.Dispatcher.HandleRequest(req, 0)
 
 		for _, line := range resp {
-			logger.Info("%s <-- %s", s.Conn.RemoteAddr(), line)	
+			s.Info("%s <-- %s", s.Conn.RemoteAddr(), line)	
 			s.Conn.Write(append([]byte(line), '\n'))
 		}
 	}
@@ -112,16 +114,16 @@ func main() {
 	library := NewLibrary(config.Library.Path)
 	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
 
-	logger.Notice("Listen at %s", config.Mpd.Listen)
+//	logger.Notice("Listen at %s", config.Mpd.Listen)
 	for {
-		logger.Debug("Wait")
+//		logger.Debug("Wait")
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Warning("Connection failed: %s", err.Error())
+//			logger.Warning("Connection failed: %s", err.Error())
 			continue
 		}
 
-		logger.Info("New connection %s\n", conn.RemoteAddr())
+//		logger.Info("New connection %s\n", conn.RemoteAddr())
 
 		session := NewMpdSession(conn, config)
 		go session.HandleEvents()
@@ -129,6 +131,6 @@ func main() {
 }
 
 func closeConn(conn net.Conn) {
-	logger.Info("Close connection %s\n", conn.RemoteAddr())
+//	logger.Info("Close connection %s\n", conn.RemoteAddr())
 	defer conn.Close()
 }
