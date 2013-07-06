@@ -61,6 +61,7 @@ func NewMpdSession(conn net.Conn, config Configuration) MpdSession {
 	result := MpdSession{
 		Conn: conn,
 		Config: config,
+		Logger: logging.MustGetLogger(LOGGER_NAME),
 	}
 
 	result.Dispatcher = NewMpdDispatcher(&result)

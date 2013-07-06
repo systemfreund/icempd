@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/op/go-logging"
 )
 
 type SqliteTagDb struct {
@@ -10,6 +11,8 @@ type SqliteTagDb struct {
 	TuneChannel <-chan Tune
 
 	db *sql.DB
+
+	*logging.Logger
 }
 
 func (db *SqliteTagDb) Close() {
@@ -17,9 +20,7 @@ func (db *SqliteTagDb) Close() {
 }
 
 func (db *SqliteTagDb) populate() {
-	for {
-		tune := <- db.TuneChannel
-
+	for tune := range db.TuneChannel {
 		tx, err := db.db.Begin()
 		if err != nil { panic("Can't create transaction") }
 
@@ -34,13 +35,14 @@ func (db *SqliteTagDb) populate() {
 }
 
 func NewSqliteTagDb(path string, tuneChannel <-chan Tune) SqliteTagDb {
-	logger.Notice("Sqlite tag database at %s", path)
-	
 	result := *new(SqliteTagDb)
+	result.Logger = logging.MustGetLogger(LOGGER_NAME)
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {	panic("Can't open tag database") }
 	result.db = db
 	result.TuneChannel = tuneChannel
+
+	result.Notice("Sqlite tag database at %s", path)
 
 	go result.populate()
 	return result
