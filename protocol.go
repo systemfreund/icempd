@@ -46,7 +46,7 @@ func init() {
 
 func closeMpdConn(context *MpdSession, params map[string]string) ([]string, error) {
 	logger.Notice("CLOSE")
-	context.Conn.Close()
+	context.Close()
 	return nil, nil
 }
 
@@ -59,7 +59,7 @@ func password(context *MpdSession, params map[string]string) ([]string, error) {
 	logger.Notice("PASSWORD %s", params["password"])
 
 	if context.Config.Mpd.Password == params["password"] {
-		context.Dispatcher.Authenticated = true
+		// context.Dispatcher.Authenticated = true
 	} else {
 		return nil, MpdAckError{
 			Code: ACK_ERROR_PASSWORD,

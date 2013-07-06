@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"net"
+	"io"
 	"os"
 	"github.com/op/go-logging"
 	"code.google.com/p/gcfg"
@@ -50,44 +49,35 @@ func (e *MpdAckError) AckString() string {
 }
 
 type MpdSession struct {
-	Conn net.Conn
+	Id string
 	Config Configuration
-	Dispatcher MpdDispatcher
 
+	Authenticated bool
+	commandListReceiving bool
+	commandListOk bool
+	commandList []string
+	commandListIndex int
+
+	io.ReadWriteCloser
 	*logging.Logger
 }
 
-func NewMpdSession(conn net.Conn, config Configuration) MpdSession {
-	result := MpdSession{
-		Conn: conn,
+func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s MpdSession) {
+	s = MpdSession{
+		Id: id,
 		Config: config,
+		ReadWriteCloser: conn,
 		Logger: logging.MustGetLogger(LOGGER_NAME),
 	}
 
-	result.Dispatcher = NewMpdDispatcher(&result)
+	s.Notice("New session %s", s.Id)
 
-	return result
+	return
 }
 
-var nl = []byte {'\n'}
-
-func (s *MpdSession) HandleEvents() {
-	defer closeConn(s.Conn)
-
-	// A new connection has been established, send welcome message
-	s.Conn.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
-
-	reader := bufio.NewScanner(s.Conn)
-	for reader.Scan() {
-		req := reader.Text()
-		s.Info("%s --> %s", s.Conn.RemoteAddr(), req)
-		resp, _ := s.Dispatcher.HandleRequest(req, 0)
-
-		for _, line := range resp {
-			s.Info("%s <-- %s", s.Conn.RemoteAddr(), line)	
-			s.Conn.Write(append([]byte(line), '\n'))
-		}
-	}
+func (s *MpdSession) Close() {
+	s.Info("Close session %s", s.Id)
+	s.ReadWriteCloser.Close()
 }
 
 func loadConfig() Configuration {
@@ -100,38 +90,12 @@ func loadConfig() Configuration {
 	return result
 }
 
-func init() {
+func main() {
 	config = loadConfig()
 	logging.SetLevel(logging.Level(config.Logging.Level), LOGGER_NAME)
-}
-
-func main() {
-	listener, err := net.Listen("tcp", config.Mpd.Listen)
-	if err != nil {
-		fmt.Printf("Fatal error: %s", err.Error())
-		os.Exit(2)
-	}
-
 	library := NewLibrary(config.Library.Path)
 	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
-
-//	logger.Notice("Listen at %s", config.Mpd.Listen)
-	for {
-//		logger.Debug("Wait")
-		conn, err := listener.Accept()
-		if err != nil {
-//			logger.Warning("Connection failed: %s", err.Error())
-			continue
-		}
-
-//		logger.Info("New connection %s\n", conn.RemoteAddr())
-
-		session := NewMpdSession(conn, config)
-		go session.HandleEvents()
-	}
-}
-
-func closeConn(conn net.Conn) {
-//	logger.Info("Close connection %s\n", conn.RemoteAddr())
-	defer conn.Close()
+	server := NewServer(config)
+	NewDispatcher(config, server.Sessions)
+	<- server.Stop
 }
