@@ -33,21 +33,6 @@ type Configuration struct {
 	}
 }
 
-type MpdAckError struct {
-	Code int
-	Index int
-	Command string
-	Message string
-}
-
-func (e MpdAckError) Error() string {
-	return e.Message
-}
-
-func (e *MpdAckError) AckString() string {
-	return fmt.Sprintf("ACK [%d@%d] {%s} %s", e.Code, e.Index, e.Command, e.Message)
-}
-
 type MpdSession struct {
 	Id string
 	Config Configuration

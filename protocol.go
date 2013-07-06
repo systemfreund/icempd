@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 )
 
@@ -21,6 +22,21 @@ const (
     ACK_ERROR_PLAYER_SYNC = 55
     ACK_ERROR_EXIST = 56
 )
+
+type MpdAckError struct {
+	Code int
+	Index int
+	Command string
+	Message string
+}
+
+func (e MpdAckError) Error() string {
+	return e.Message
+}
+
+func (e *MpdAckError) AckString() string {
+	return fmt.Sprintf("ACK [%d@%d] {%s} %s", e.Code, e.Index, e.Command, e.Message)
+}
 
 type CommandHandlerFunc func(context *MpdSession, params map[string]string) ([]string, error)
 
