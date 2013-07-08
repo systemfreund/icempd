@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"github.com/op/go-logging"
 	"code.google.com/p/gcfg"
+	"fmt"
+	"github.com/op/go-logging"
+	"os"
 )
 
 const (
@@ -14,11 +14,11 @@ const (
 var (
 	logger = logging.MustGetLogger(LOGGER_NAME)
 	config Configuration
-) 
+)
 
 type Configuration struct {
 	Library struct {
-		Path string
+		Path   string
 		DbPath string
 	}
 
@@ -27,7 +27,7 @@ type Configuration struct {
 	}
 
 	Mpd struct {
-		Listen string
+		Listen   string
 		Password string
 	}
 }
@@ -49,5 +49,5 @@ func main() {
 	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
 	server := NewServer(config)
 	NewDispatcher(config, server.Sessions)
-	<- server.Stop
+	<-server.Stop
 }

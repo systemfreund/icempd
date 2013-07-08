@@ -1,20 +1,20 @@
-package main 
+package main
 
 import (
-	"os"
-	"path/filepath"
 	"bitbucket.org/taruti/taglib.go"
 	"github.com/op/go-logging"
+	"os"
+	"path/filepath"
 )
 
 type Tune struct {
-	Uri string
+	Uri                                  string
 	Title, Artist, Album, Comment, Genre string
-	Year, Track int
+	Year, Track                          int
 }
 
 type Library struct {
-	path string
+	path        string
 	TuneChannel chan Tune
 
 	*logging.Logger
@@ -22,7 +22,7 @@ type Library struct {
 
 func NewLibrary(basePath string) Library {
 	result := Library{
-		filepath.Clean(basePath), 
+		filepath.Clean(basePath),
 		make(chan Tune, 20),
 		logging.MustGetLogger(LOGGER_NAME),
 	}
@@ -42,7 +42,7 @@ func (l *Library) walkFunc(path string, info os.FileInfo, err error) error {
 	}
 
 	if info.Mode().IsRegular() && filepath.Ext(path) == ".mp3" {
-		l.Debug("* %s", path)	
+		l.Debug("* %s", path)
 		tune := Tune{
 			Uri: path,
 		}

@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/op/go-logging"
 	"net"
 	"os"
-	"github.com/op/go-logging"
 )
 
 type Server struct {
 	Sessions chan MpdSession
-	Stop chan bool
+	Stop     chan bool
 
 	*logging.Logger
 }
@@ -22,7 +22,7 @@ func NewServer(config Configuration) (s Server) {
 	}
 
 	s = Server{
-		make(chan MpdSession), 
+		make(chan MpdSession),
 		make(chan bool),
 		logging.MustGetLogger(LOGGER_NAME),
 	}

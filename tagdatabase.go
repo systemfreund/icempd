@@ -7,7 +7,7 @@ import (
 )
 
 type SqliteTagDb struct {
-	Path string
+	Path        string
 	TuneChannel <-chan Tune
 
 	db *sql.DB
@@ -22,10 +22,14 @@ func (db *SqliteTagDb) Close() {
 func (db *SqliteTagDb) populate() {
 	for tune := range db.TuneChannel {
 		tx, err := db.db.Begin()
-		if err != nil { panic("Can't create transaction") }
+		if err != nil {
+			panic("Can't create transaction")
+		}
 
 		stmt, err := tx.Prepare("insert into Tunes(Uri, Title, Artist, Album) values (?, ?, ?, ?)")
-		if err != nil { panic("Can't prepare statement") }
+		if err != nil {
+			panic("Can't prepare statement")
+		}
 		defer stmt.Close()
 
 		stmt.Exec(tune.Uri, tune.Title, tune.Artist, tune.Album)
@@ -38,7 +42,9 @@ func NewSqliteTagDb(path string, tuneChannel <-chan Tune) SqliteTagDb {
 	result := *new(SqliteTagDb)
 	result.Logger = logging.MustGetLogger(LOGGER_NAME)
 	db, err := sql.Open("sqlite3", path)
-	if err != nil {	panic("Can't open tag database") }
+	if err != nil {
+		panic("Can't open tag database")
+	}
 	result.db = db
 	result.TuneChannel = tuneChannel
 
@@ -47,4 +53,3 @@ func NewSqliteTagDb(path string, tuneChannel <-chan Tune) SqliteTagDb {
 	go result.populate()
 	return result
 }
-

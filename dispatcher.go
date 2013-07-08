@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"strings"
 	"github.com/op/go-logging"
+	"strings"
 )
 
 type FilterFunc func(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error)
@@ -34,7 +34,7 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 				d.Info("--> %s", req)
 				resp, _ := d.HandleRequest(&session, req, 0)
 				for _, line := range resp {
-					d.Info("<-- %s", line)	
+					d.Info("<-- %s", line)
 					session.Write(append([]byte(line), '\n'))
 				}
 			}
@@ -44,11 +44,11 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 
 func (d *Dispatcher) HandleRequest(session *MpdSession, req string, curCommandListIdx int) ([]string, error) {
 	d.Debug("HandleRequest: %s", req)
-	session.commandListIndex = curCommandListIdx;
+	session.commandListIndex = curCommandListIdx
 
-	response := []string{};
-	filterChain := []FilterFunc { 
-		d.CatchMpdAckErrorsFilter, 
+	response := []string{}
+	filterChain := []FilterFunc{
+		d.CatchMpdAckErrorsFilter,
 		d.AuthenticateFilter,
 		d.CommandListFilter,
 		d.AddOkFilter,
@@ -77,7 +77,7 @@ func (d *Dispatcher) CatchMpdAckErrorsFilter(session *MpdSession, req string, re
 			ackErr.Index = session.commandListIndex
 		}
 
-		resp = []string { ackErr.AckString() }
+		resp = []string{ackErr.AckString()}
 	}
 
 	return resp, err
@@ -93,12 +93,12 @@ func (d *Dispatcher) AuthenticateFilter(session *MpdSession, req string, resp []
 		return d.CallNextFilter(session, req, resp, filterChain)
 	} else {
 		commandName := strings.Split(req, " ")[0]
-		
+
 		if command, ok := MPD_COMMANDS[commandName]; ok && !command.AuthRequired {
 			return d.CallNextFilter(session, req, resp, filterChain)
 		} else {
 			return nil, MpdAckError{
-				Code: ACK_ERROR_PERMISSION,
+				Code:    ACK_ERROR_PERMISSION,
 				Command: commandName,
 				Message: fmt.Sprintf("you don't have permission for \"%s\"", commandName),
 			}
@@ -112,15 +112,15 @@ func (d *Dispatcher) CommandListFilter(session *MpdSession, req string, resp []s
 	if d.isReceivingCommandList(session, req) {
 		d.Debug("CommandListFilter append to command list")
 		session.commandList = append(session.commandList, req)
-		return []string {}, nil
+		return []string{}, nil
 	} else {
 		resp, err := d.CallNextFilter(session, req, resp, filterChain)
-		
+
 		if err != nil {
 			return resp, err
 		} else if d.isReceivingCommandList(session, req) || d.isProcessingCommandList(session, req) {
-			if len(resp) > 0 && resp[len(resp) - 1] == "OK" {
-				resp = resp[:len(resp) - 1]
+			if len(resp) > 0 && resp[len(resp)-1] == "OK" {
+				resp = resp[:len(resp)-1]
 			}
 		}
 
@@ -146,12 +146,12 @@ func (d *Dispatcher) AddOkFilter(session *MpdSession, req string, resp []string,
 	} else if !d.hasError(resp) {
 		resp = append(resp, "OK")
 	}
-	
+
 	return resp, nil
 }
 
 func (d *Dispatcher) hasError(resp []string) bool {
-	return resp != nil && (len(resp) > 0 && strings.HasPrefix(resp[len(resp) - 1], "ACK"))
+	return resp != nil && (len(resp) > 0 && strings.HasPrefix(resp[len(resp)-1], "ACK"))
 }
 
 func (d *Dispatcher) CallHandlerFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
@@ -179,26 +179,26 @@ func (d *Dispatcher) findMpdCommand(req string) (*MpdCommand, map[string]string,
 
 		if matches == nil {
 			return &mpdCommand, nil, MpdAckError{
-				Code: ACK_ERROR_ARG,
+				Code:    ACK_ERROR_ARG,
 				Command: commandName,
 				Message: "incorrect arguments",
 			}
 		}
 
 		// Convert to parameter map
-		params := map[string]string {}
+		params := map[string]string{}
 		groups := mpdCommand.Pattern.SubexpNames()[1:]
 		for i, group := range groups {
-			params[group] = matches[i + 1]
+			params[group] = matches[i+1]
 		}
-		
+
 		d.Debug("COMMAND:%s ARGUMENTS:%q", commandName, params)
 
 		return &mpdCommand, params, nil
 	}
 
 	return nil, nil, MpdAckError{
-		Code: ACK_ERROR_UNKNOWN,
+		Code:    ACK_ERROR_UNKNOWN,
 		Command: commandName,
 		Message: fmt.Sprintf("unknown command \"%s\"", commandName),
 	}

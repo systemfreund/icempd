@@ -1,19 +1,19 @@
 package main
 
 import (
-	"io"
 	"github.com/op/go-logging"
+	"io"
 )
 
 type MpdSession struct {
-	Id string
+	Id     string
 	Config Configuration
 
-	Authenticated bool
+	Authenticated        bool
 	commandListReceiving bool
-	commandListOk bool
-	commandList []string
-	commandListIndex int
+	commandListOk        bool
+	commandList          []string
+	commandListIndex     int
 
 	io.ReadWriteCloser
 	*logging.Logger
@@ -21,10 +21,10 @@ type MpdSession struct {
 
 func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s MpdSession) {
 	s = MpdSession{
-		Id: id,
-		Config: config,
+		Id:              id,
+		Config:          config,
 		ReadWriteCloser: conn,
-		Logger: logging.MustGetLogger(LOGGER_NAME),
+		Logger:          logging.MustGetLogger(LOGGER_NAME),
 	}
 
 	s.Notice("New session %s", s.Id)
