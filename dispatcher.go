@@ -22,7 +22,7 @@ func NewDispatcher(config Configuration, sessions <-chan MpdSession) (d Dispatch
 
 func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 	for session := range sessions {
-		go func() {
+		go func(session MpdSession) {
 			defer session.Close()
 
 			// Send welcome message
@@ -38,7 +38,7 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 					session.Write(append([]byte(line), '\n'))
 				}
 			}
-		}()
+		}(session)
 	}
 }
 
