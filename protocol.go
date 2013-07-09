@@ -56,7 +56,12 @@ func init() {
 		"password": MpdCommand{false, password, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
 
 		// Status
-		"status": MpdCommand{true, mpdStatus, regexp.MustCompile("^status$")},
+		"status": 	MpdCommand{true, mpdStatus, regexp.MustCompile("^status$")},
+		"idle":		MpdCommand{true, setIdle, regexp.MustCompile("^idle$")},
+		"noidle":	MpdCommand{true, setNoIdle, regexp.MustCompile("^noidle$")},
+
+		// Playlist
+		"playlistinfo": MpdCommand{true, getPlaylistInfo, regexp.MustCompile("^playlistinfo$")},
 	}
 }
 
@@ -102,5 +107,20 @@ func mpdStatus(context *MpdSession, params map[string]string) (result []string, 
 		"state: stop", // pause, play
 	}
 
+	return
+}
+
+func setIdle(context *MpdSession, params map[string]string) (result []string, err error) {
+	logger.Notice("IDLE")
+	return
+}
+
+func setNoIdle(context *MpdSession, params map[string]string) (result []string, err error) {
+	logger.Notice("NOIDLE")
+	return
+}
+
+func getPlaylistInfo(context *MpdSession, params map[string]string) (result []string, err error) {
+	logger.Notice("PLAYLISTINFO")
 	return
 }
