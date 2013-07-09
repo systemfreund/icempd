@@ -32,8 +32,12 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 			for reader.Scan() {
 				req := reader.Text()
 				d.Info("--> %s", req)
-				resp, _ := d.HandleRequest(&session, req, 0)
+				resp, err := d.HandleRequest(&session, req, 0)
 				for _, line := range resp {
+					if err != nil {
+						d.Warning("Command failed: %v", err)
+					} 
+
 					d.Info("<-- %s", line)
 					session.Write(append([]byte(line), '\n'))
 				}

@@ -87,7 +87,20 @@ func password(context *MpdSession, params map[string]string) ([]string, error) {
 	return nil, nil
 }
 
-func mpdStatus(context *MpdSession, params map[string]string) ([]string, error) {
+func mpdStatus(context *MpdSession, params map[string]string) (result []string, err error) {
 	logger.Notice("STATUS")
-	return nil, nil
+
+	result = []string {
+		"volume: 100",
+		"repeat: 0",
+		"random: 0",
+		"single: 0",
+		"consume: 0",
+		"playlist: 1",
+		"playlistlength: 0",
+		"xfade: 0",
+		"state: stop", // pause, play
+	}
+
+	return
 }
