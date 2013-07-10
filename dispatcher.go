@@ -36,7 +36,7 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 				for _, line := range resp {
 					if err != nil {
 						d.Warning("Command failed: %v", err)
-					} 
+					}
 
 					d.Info("<-- %s", line)
 					session.Write(append([]byte(line), '\n'))
@@ -189,12 +189,8 @@ func (d *Dispatcher) findMpdCommand(req string) (*MpdCommand, map[string]string,
 			}
 		}
 
-		// Convert to parameter map
-		params := map[string]string{}
 		groups := mpdCommand.Pattern.SubexpNames()[1:]
-		for i, group := range groups {
-			params[group] = matches[i+1]
-		}
+		params := toMap(groups, matches[1:])
 
 		d.Debug("COMMAND:%s ARGUMENTS:%q", commandName, params)
 
@@ -206,4 +202,15 @@ func (d *Dispatcher) findMpdCommand(req string) (*MpdCommand, map[string]string,
 		Command: commandName,
 		Message: fmt.Sprintf("unknown command \"%s\"", commandName),
 	}
+}
+
+func toMap(groups []string, matches []string) (params map[string]string) {
+	params = map[string]string{}
+	for i, group := range groups {
+		if group != "" {
+			params[group] = matches[i]
+		}
+	}
+
+	return
 }
