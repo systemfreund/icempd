@@ -55,6 +55,7 @@ func (d *Dispatcher) HandleRequest(session *MpdSession, req string, curCommandLi
 		d.CatchMpdAckErrorsFilter,
 		d.AuthenticateFilter,
 		d.CommandListFilter,
+		d.IdleFilter,
 		d.AddOkFilter,
 		d.CallHandlerFilter,
 	}
@@ -213,4 +214,28 @@ func toMap(groups []string, matches []string) (params map[string]string) {
 	}
 
 	return
+}
+
+func (d *Dispatcher) IdleFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+	d.Debug("IdleFilter")
+	noidle := "noidle"
+
+	if session.isCurrentlyIdle() && req != noidle {
+		d.Debug("Client sent us %s, only %s is allowed while in the idle state", req, noidle)
+		session.Close()
+		return nil, nil
+	}
+
+	if !session.isCurrentlyIdle() && req == noidle {
+		// noidle was called before idle
+		return nil, nil
+	}
+
+	resp, err := d.CallNextFilter(session, req, resp, filterChain)
+
+	if session.isCurrentlyIdle() {
+		return nil, nil
+	}
+
+	return resp, err
 }

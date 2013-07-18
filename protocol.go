@@ -46,7 +46,10 @@ type MpdCommand struct {
 	Pattern      *regexp.Regexp
 }
 
-var MPD_COMMANDS map[string]MpdCommand
+var (
+	MPD_COMMANDS map[string]MpdCommand
+	SUBSYSTEMS   []string
+)
 
 func init() {
 	MPD_COMMANDS = map[string]MpdCommand{
@@ -56,12 +59,17 @@ func init() {
 		"password": MpdCommand{false, password, regexp.MustCompile("^password \"(?P<password>[^\"]+)\"$")},
 
 		// Status
-		"status": 	MpdCommand{true, mpdStatus, regexp.MustCompile("^status$")},
-		"idle":		MpdCommand{true, setIdle, regexp.MustCompile("^idle$")},
-		"noidle":	MpdCommand{true, setNoIdle, regexp.MustCompile("^noidle$")},
+		"status": MpdCommand{true, mpdStatus, regexp.MustCompile("^status$")},
+		"idle":   MpdCommand{true, setIdle, regexp.MustCompile("^idle( (?P<subsystems>.+))?$")},
+		"noidle": MpdCommand{true, setNoIdle, regexp.MustCompile("^noidle$")},
 
 		// Playlist
 		"playlistinfo": MpdCommand{true, getPlaylistInfo, regexp.MustCompile("^playlistinfo$")},
+	}
+
+	SUBSYSTEMS = []string{
+		"database", "mixer", "options", "output",
+		"player", "playlist", "stored_paylist", "update",
 	}
 }
 
@@ -95,7 +103,7 @@ func password(context *MpdSession, params map[string]string) ([]string, error) {
 func mpdStatus(context *MpdSession, params map[string]string) (result []string, err error) {
 	logger.Notice("STATUS")
 
-	result = []string {
+	result = []string{
 		"volume: 100",
 		"repeat: 0",
 		"random: 0",
@@ -111,12 +119,35 @@ func mpdStatus(context *MpdSession, params map[string]string) (result []string, 
 }
 
 func setIdle(context *MpdSession, params map[string]string) (result []string, err error) {
-	logger.Notice("IDLE")
+	logger.Notice("IDLE %s", params)
+
+	// TODO handle subsystems parameter
+	subsystems := SUBSYSTEMS
+	for _, sub := range subsystems {
+		context.addSubscription(sub)
+	}
+
+	active := context.getActiveEvents()
+	if len(active) == 0 {
+		context.preventTimeout = true
+		return
+	}
+
+	context.clearEvents()
+	context.clearSubscriptions()
+
+	for _, subsystem := range active {
+		result = append(result, fmt.Sprintf("changed: %s", subsystem))
+	}
+
 	return
 }
 
 func setNoIdle(context *MpdSession, params map[string]string) (result []string, err error) {
 	logger.Notice("NOIDLE")
+	context.clearEvents()
+	context.clearSubscriptions()
+	context.preventTimeout = false
 	return
 }
 
