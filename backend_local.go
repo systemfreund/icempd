@@ -10,7 +10,7 @@ import (
 type Tune struct {
 	Uri                                  string
 	Title, Artist, Album, Comment, Genre string
-	Year, Track                          int
+	Year, Track, Length	                 int
 }
 
 type Library struct {
@@ -62,6 +62,7 @@ func PopulateTune(tune *Tune) {
 		return
 	}
 	tags := f.GetTags()
+	props := f.GetProperties()
 	defer f.Close()
 
 	tune.Title = tags.Title
@@ -71,4 +72,5 @@ func PopulateTune(tune *Tune) {
 	tune.Genre = tags.Genre
 	tune.Year = tags.Year
 	tune.Track = tags.Track
+	tune.Length = props.Length
 }
