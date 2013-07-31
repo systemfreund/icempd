@@ -47,7 +47,29 @@ func main() {
 	logging.SetLevel(logging.Level(config.Logging.Level), LOGGER_NAME)
 	library := NewLibrary(config.Library.Path)
 	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
+	playlist := Playlist{}
+	addFakeTune(playlist)
 	server := NewServer(config)
 	NewDispatcher(config, server.Sessions)
 	<-server.Stop
+}
+
+func addFakeTune(p Playlist) {
+	t := Tune{
+		Uri:    "file:///Users/yildiz/tmp/music/Quantic - Mishaps Happening (2004)/03 sound of everything.mp3",
+		Title:  "Mishaps Happening",
+		Artist: "Quantic",
+		Album:  "Mishaps Happening",
+		Genre:  "Downbeat",
+		Year:   2004,
+		Track:  3,
+		Length: 242,
+	}
+
+	pe := PlaylistEntry{
+		id:   0,
+		tune: t,
+	}
+
+	p.add(pe)
 }
