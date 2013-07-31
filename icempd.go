@@ -45,8 +45,8 @@ func loadConfig() Configuration {
 func main() {
 	config = loadConfig()
 	logging.SetLevel(logging.Level(config.Logging.Level), LOGGER_NAME)
-	library := NewLibrary(config.Library.Path)
-	NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
+	// library := NewLibrary(config.Library.Path)
+	// NewSqliteTagDb(config.Library.DbPath, library.TuneChannel)
 	playlist := Playlist{}
 	addFakeTune(playlist)
 	server := NewServer(config)
