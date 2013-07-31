@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-type MpdSession struct {
+type Session struct {
 	Id     string
 	Config Configuration
 
@@ -23,8 +23,8 @@ type MpdSession struct {
 	*logging.Logger
 }
 
-func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s MpdSession) {
-	s = MpdSession{
+func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s Session) {
+	s = Session{
 		Id:              id,
 		Config:          config,
 		ReadWriteCloser: conn,
@@ -36,37 +36,37 @@ func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s 
 	return
 }
 
-func (s *MpdSession) Close() {
+func (s *Session) Close() {
 	s.Info("Close session %s", s.Id)
 	s.ReadWriteCloser.Close()
 }
 
-func (s *MpdSession) isCurrentlyIdle() bool {
+func (s *Session) isCurrentlyIdle() bool {
 	return nil != s.subscriptions
 }
 
-func (s *MpdSession) addSubscription(sub string) {
+func (s *Session) addSubscription(sub string) {
 	s.Debug("add subscription: %s", sub)
 	// TODO dont add dupes
 	s.subscriptions = append(s.subscriptions, sub)
 }
 
-func (s *MpdSession) clearSubscriptions() {
+func (s *Session) clearSubscriptions() {
 	s.Debug("clear subscriptions")
 	s.subscriptions = nil
 }
 
-func (s *MpdSession) addEvent(subsystem string) {
+func (s *Session) addEvent(subsystem string) {
 	// TODO add event
 	s.Debug("add event: %s", subsystem)
 }
 
-func (s *MpdSession) clearEvents() {
+func (s *Session) clearEvents() {
 	s.Debug("clear events")
 	s.events = nil
 }
 
-func (s *MpdSession) getActiveEvents() []string {
+func (s *Session) getActiveEvents() []string {
 	// TODO return intersection of events and subscriptions
 	return []string{}
 }

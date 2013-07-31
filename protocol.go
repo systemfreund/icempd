@@ -38,7 +38,7 @@ func (e *MpdAckError) AckString() string {
 	return fmt.Sprintf("ACK [%d@%d] {%s} %s", e.Code, e.Index, e.Command, e.Message)
 }
 
-type CommandHandlerFunc func(context *MpdSession, params map[string]string) ([]string, error)
+type CommandHandlerFunc func(context *Session, params map[string]string) ([]string, error)
 
 type MpdCommand struct {
 	AuthRequired bool
@@ -73,18 +73,18 @@ func init() {
 	}
 }
 
-func closeMpdConn(context *MpdSession, params map[string]string) ([]string, error) {
+func closeMpdConn(context *Session, params map[string]string) ([]string, error) {
 	logger.Notice("CLOSE")
 	context.Close()
 	return nil, nil
 }
 
-func ping(context *MpdSession, params map[string]string) ([]string, error) {
+func ping(context *Session, params map[string]string) ([]string, error) {
 	logger.Notice("PING")
 	return nil, nil
 }
 
-func password(context *MpdSession, params map[string]string) ([]string, error) {
+func password(context *Session, params map[string]string) ([]string, error) {
 	logger.Notice("PASSWORD %s", params["password"])
 
 	if context.Config.Mpd.Password == params["password"] {
@@ -100,7 +100,7 @@ func password(context *MpdSession, params map[string]string) ([]string, error) {
 	return nil, nil
 }
 
-func mpdStatus(context *MpdSession, params map[string]string) (result []string, err error) {
+func mpdStatus(context *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("STATUS")
 
 	result = []string{
@@ -118,7 +118,7 @@ func mpdStatus(context *MpdSession, params map[string]string) (result []string, 
 	return
 }
 
-func setIdle(context *MpdSession, params map[string]string) (result []string, err error) {
+func setIdle(context *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("IDLE %s", params)
 
 	// TODO handle subsystems parameter
@@ -143,7 +143,7 @@ func setIdle(context *MpdSession, params map[string]string) (result []string, er
 	return
 }
 
-func setNoIdle(context *MpdSession, params map[string]string) (result []string, err error) {
+func setNoIdle(context *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("NOIDLE")
 	context.clearEvents()
 	context.clearSubscriptions()
@@ -151,7 +151,7 @@ func setNoIdle(context *MpdSession, params map[string]string) (result []string, 
 	return
 }
 
-func getPlaylistInfo(context *MpdSession, params map[string]string) (result []string, err error) {
+func getPlaylistInfo(context *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("PLAYLISTINFO")
 	return
 }

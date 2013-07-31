@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type FilterFunc func(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error)
+type FilterFunc func(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error)
 
 type Dispatcher struct {
 	config Configuration
@@ -20,9 +20,9 @@ func NewDispatcher(config Configuration, sessions <-chan MpdSession) (d Dispatch
 	return
 }
 
-func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
+func (d *Dispatcher) dispatcherFunc(sessions <-chan Session) {
 	for session := range sessions {
-		go func(session MpdSession) {
+		go func(session Session) {
 			defer session.Close()
 
 			// Send welcome message
@@ -46,7 +46,7 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan MpdSession) {
 	}
 }
 
-func (d *Dispatcher) HandleRequest(session *MpdSession, req string, curCommandListIdx int) ([]string, error) {
+func (d *Dispatcher) HandleRequest(session *Session, req string, curCommandListIdx int) ([]string, error) {
 	d.Debug("HandleRequest: %s", req)
 	session.commandListIndex = curCommandListIdx
 
@@ -63,7 +63,7 @@ func (d *Dispatcher) HandleRequest(session *MpdSession, req string, curCommandLi
 	return d.CallNextFilter(session, req, response, filterChain)
 }
 
-func (d *Dispatcher) CallNextFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) CallNextFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	if len(filterChain) > 0 {
 		nextFilter := filterChain[0]
 		return nextFilter(session, req, resp, filterChain[1:])
@@ -72,7 +72,7 @@ func (d *Dispatcher) CallNextFilter(session *MpdSession, req string, resp []stri
 	}
 }
 
-func (d *Dispatcher) CatchMpdAckErrorsFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) CatchMpdAckErrorsFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("CatchMpdAckErrorsFilter")
 	resp, err := d.CallNextFilter(session, req, resp, filterChain)
 
@@ -88,7 +88,7 @@ func (d *Dispatcher) CatchMpdAckErrorsFilter(session *MpdSession, req string, re
 	return resp, err
 }
 
-func (d *Dispatcher) AuthenticateFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) AuthenticateFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("AuthenticateFilter")
 
 	if session.Authenticated {
@@ -111,7 +111,7 @@ func (d *Dispatcher) AuthenticateFilter(session *MpdSession, req string, resp []
 	}
 }
 
-func (d *Dispatcher) CommandListFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) CommandListFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("CommandListFilter")
 
 	if d.isReceivingCommandList(session, req) {
@@ -133,15 +133,15 @@ func (d *Dispatcher) CommandListFilter(session *MpdSession, req string, resp []s
 	}
 }
 
-func (d *Dispatcher) isReceivingCommandList(session *MpdSession, req string) bool {
+func (d *Dispatcher) isReceivingCommandList(session *Session, req string) bool {
 	return session.commandListReceiving && req != "command_list_end"
 }
 
-func (d *Dispatcher) isProcessingCommandList(session *MpdSession, req string) bool {
+func (d *Dispatcher) isProcessingCommandList(session *Session, req string) bool {
 	return session.commandListIndex != 0 && req != "command_list_end"
 }
 
-func (d *Dispatcher) AddOkFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) AddOkFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("AddOkFilter")
 
 	resp, err := d.CallNextFilter(session, req, resp, filterChain)
@@ -159,7 +159,7 @@ func (d *Dispatcher) hasError(resp []string) bool {
 	return resp != nil && (len(resp) > 0 && strings.HasPrefix(resp[len(resp)-1], "ACK"))
 }
 
-func (d *Dispatcher) CallHandlerFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) CallHandlerFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("CallHandlerFilter")
 
 	cmd, params, err := d.findMpdCommand(req)
@@ -216,7 +216,7 @@ func toMap(groups []string, matches []string) (params map[string]string) {
 	return
 }
 
-func (d *Dispatcher) IdleFilter(session *MpdSession, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
+func (d *Dispatcher) IdleFilter(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error) {
 	d.Debug("IdleFilter")
 	noidle := "noidle"
 

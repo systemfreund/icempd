@@ -8,7 +8,7 @@ import (
 )
 
 type Server struct {
-	Sessions chan MpdSession
+	Sessions chan Session
 	Stop     chan bool
 
 	*logging.Logger
@@ -22,7 +22,7 @@ func NewServer(config Configuration) (s Server) {
 	}
 
 	s = Server{
-		make(chan MpdSession),
+		make(chan Session),
 		make(chan bool),
 		logging.MustGetLogger(LOGGER_NAME),
 	}
