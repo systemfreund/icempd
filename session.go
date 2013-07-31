@@ -2,12 +2,11 @@ package main
 
 import (
 	"github.com/op/go-logging"
-	"io"
 )
 
 type Session struct {
-	Id     string
-	Config Configuration
+	Core
+	Connection
 
 	Authenticated        bool
 	commandListReceiving bool
@@ -19,26 +18,17 @@ type Session struct {
 	events         []string
 	preventTimeout bool
 
-	io.ReadWriteCloser
 	*logging.Logger
 }
 
-func NewMpdSession(id string, conn io.ReadWriteCloser, config Configuration) (s Session) {
-	s = Session{
-		Id:              id,
-		Config:          config,
-		ReadWriteCloser: conn,
-		Logger:          logging.MustGetLogger(LOGGER_NAME),
+func NewSession(core Core, conn Connection) (s Session) {
+	s = Session {
+		Core: core,
+		Connection: conn,
+		Logger: logging.MustGetLogger(LOGGER_NAME),
 	}
 
-	s.Notice("New session %s", s.Id)
-
 	return
-}
-
-func (s *Session) Close() {
-	s.Info("Close session %s", s.Id)
-	s.ReadWriteCloser.Close()
 }
 
 func (s *Session) isCurrentlyIdle() bool {
