@@ -50,7 +50,8 @@ func main() {
 	playlist := Playlist{}
 	addFakeTune(playlist)
 	server := NewServer(config)
-	NewDispatcher(config, server.Sessions)
+	core := Core{config, playlist}
+	NewDispatcher(server.Sessions, core)
 	<-server.Stop
 }
 

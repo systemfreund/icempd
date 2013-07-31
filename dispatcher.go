@@ -9,13 +9,18 @@ import (
 
 type FilterFunc func(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error)
 
+type Context struct {
+	Core
+	Session
+}
+
 type Dispatcher struct {
-	config Configuration
+	Core
 	*logging.Logger
 }
 
-func NewDispatcher(config Configuration, sessions <-chan MpdSession) (d Dispatcher) {
-	d = Dispatcher{config, logging.MustGetLogger(LOGGER_NAME)}
+func NewDispatcher(sessions <-chan Session, core Core) (d Dispatcher) {
+	d = Dispatcher{core, logging.MustGetLogger(LOGGER_NAME)}
 	go d.dispatcherFunc(sessions)
 	return
 }
@@ -24,6 +29,8 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan Session) {
 	for session := range sessions {
 		go func(session Session) {
 			defer session.Close()
+
+			// context := Context{d.Core, session}
 
 			// Send welcome message
 			session.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
@@ -93,7 +100,7 @@ func (d *Dispatcher) AuthenticateFilter(session *Session, req string, resp []str
 
 	if session.Authenticated {
 		return d.CallNextFilter(session, req, resp, filterChain)
-	} else if d.config.Mpd.Password == "" {
+	} else if d.Core.Config.Mpd.Password == "" {
 		session.Authenticated = true
 		return d.CallNextFilter(session, req, resp, filterChain)
 	} else {
