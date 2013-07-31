@@ -5,13 +5,21 @@ import (
 	"github.com/op/go-logging"
 	"net"
 	"os"
+	"io"
 )
 
 type Server struct {
-	Sessions chan Session
+	Connections chan Connection
 	Stop     chan bool
 
 	*logging.Logger
+}
+
+type Connection struct {
+	Id     string
+
+	io.ReadWriteCloser
+	logging.Logger
 }
 
 func NewServer(config Configuration) (s Server) {
@@ -22,7 +30,7 @@ func NewServer(config Configuration) (s Server) {
 	}
 
 	s = Server{
-		make(chan Session),
+		make(chan Connection),
 		make(chan bool),
 		logging.MustGetLogger(LOGGER_NAME),
 	}
@@ -38,9 +46,20 @@ func NewServer(config Configuration) (s Server) {
 			}
 
 			s.Debug("New Connection from %v\n", conn.RemoteAddr())
-			s.Sessions <- NewMpdSession(conn.RemoteAddr().String(), conn, config)
+			s.Connections <- newConnection(conn.RemoteAddr().String(), conn)
 		}
 	}()
 
 	return
+}
+
+func newConnection(id string, conn io.ReadWriteCloser) (s Connection) {
+	s = Connection{id, conn, *logging.MustGetLogger(LOGGER_NAME)}
+	s.Notice("New Connection %s", s.Id)
+	return
+}
+
+func (s *Connection) Close() {
+	s.Info("Close Connection %s", s.Id)
+	s.ReadWriteCloser.Close()
 }

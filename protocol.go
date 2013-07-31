@@ -38,7 +38,7 @@ func (e *MpdAckError) AckString() string {
 	return fmt.Sprintf("ACK [%d@%d] {%s} %s", e.Code, e.Index, e.Command, e.Message)
 }
 
-type CommandHandlerFunc func(context *Session, params map[string]string) ([]string, error)
+type CommandHandlerFunc func(session *Session, params map[string]string) ([]string, error)
 
 type MpdCommand struct {
 	AuthRequired bool
@@ -73,22 +73,22 @@ func init() {
 	}
 }
 
-func closeMpdConn(context *Session, params map[string]string) ([]string, error) {
+func closeMpdConn(session *Session, params map[string]string) ([]string, error) {
 	logger.Notice("CLOSE")
-	context.Close()
+	session.Close()
 	return nil, nil
 }
 
-func ping(context *Session, params map[string]string) ([]string, error) {
+func ping(session *Session, params map[string]string) ([]string, error) {
 	logger.Notice("PING")
 	return nil, nil
 }
 
-func password(context *Session, params map[string]string) ([]string, error) {
+func password(session *Session, params map[string]string) ([]string, error) {
 	logger.Notice("PASSWORD %s", params["password"])
 
-	if context.Config.Mpd.Password == params["password"] {
-		// context.Dispatcher.Authenticated = true
+	if session.Config.Mpd.Password == params["password"] {
+		session.Authenticated = true
 	} else {
 		return nil, MpdAckError{
 			Code:    ACK_ERROR_PASSWORD,
@@ -100,7 +100,7 @@ func password(context *Session, params map[string]string) ([]string, error) {
 	return nil, nil
 }
 
-func mpdStatus(context *Session, params map[string]string) (result []string, err error) {
+func mpdStatus(session *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("STATUS")
 
 	result = []string{
@@ -118,23 +118,23 @@ func mpdStatus(context *Session, params map[string]string) (result []string, err
 	return
 }
 
-func setIdle(context *Session, params map[string]string) (result []string, err error) {
+func setIdle(session *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("IDLE %s", params)
 
 	// TODO handle subsystems parameter
 	subsystems := SUBSYSTEMS
 	for _, sub := range subsystems {
-		context.addSubscription(sub)
+		session.addSubscription(sub)
 	}
 
-	active := context.getActiveEvents()
+	active := session.getActiveEvents()
 	if len(active) == 0 {
-		context.preventTimeout = true
+		session.preventTimeout = true
 		return
 	}
 
-	context.clearEvents()
-	context.clearSubscriptions()
+	session.clearEvents()
+	session.clearSubscriptions()
 
 	for _, subsystem := range active {
 		result = append(result, fmt.Sprintf("changed: %s", subsystem))
@@ -143,15 +143,15 @@ func setIdle(context *Session, params map[string]string) (result []string, err e
 	return
 }
 
-func setNoIdle(context *Session, params map[string]string) (result []string, err error) {
+func setNoIdle(session *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("NOIDLE")
-	context.clearEvents()
-	context.clearSubscriptions()
-	context.preventTimeout = false
+	session.clearEvents()
+	session.clearSubscriptions()
+	session.preventTimeout = false
 	return
 }
 
-func getPlaylistInfo(context *Session, params map[string]string) (result []string, err error) {
+func getPlaylistInfo(session *Session, params map[string]string) (result []string, err error) {
 	logger.Notice("PLAYLISTINFO")
 	return
 }

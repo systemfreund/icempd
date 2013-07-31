@@ -9,33 +9,28 @@ import (
 
 type FilterFunc func(session *Session, req string, resp []string, filterChain []FilterFunc) ([]string, error)
 
-type Context struct {
-	Core
-	Session
-}
-
 type Dispatcher struct {
 	Core
 	*logging.Logger
 }
 
-func NewDispatcher(sessions <-chan Session, core Core) (d Dispatcher) {
+func NewDispatcher(connections <-chan Connection, core Core) (d Dispatcher) {
 	d = Dispatcher{core, logging.MustGetLogger(LOGGER_NAME)}
-	go d.dispatcherFunc(sessions)
+	go d.dispatcherFunc(connections)
 	return
 }
 
-func (d *Dispatcher) dispatcherFunc(sessions <-chan Session) {
-	for session := range sessions {
-		go func(session Session) {
-			defer session.Close()
+func (d *Dispatcher) dispatcherFunc(connections <-chan Connection) {
+	for connection := range connections {
+		go func(conn Connection) {
+			defer conn.Close()
 
-			// context := Context{d.Core, session}
+			session := NewSession(d.Core, conn)
 
 			// Send welcome message
-			session.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
+			conn.Write([]byte(fmt.Sprintf("OK MPD %s\n", PROTOCOL_VERSION)))
 
-			reader := bufio.NewScanner(session)
+			reader := bufio.NewScanner(conn)
 			for reader.Scan() {
 				req := reader.Text()
 				d.Info("--> %s", req)
@@ -46,10 +41,10 @@ func (d *Dispatcher) dispatcherFunc(sessions <-chan Session) {
 					}
 
 					d.Info("<-- %s", line)
-					session.Write(append([]byte(line), '\n'))
+					conn.Write(append([]byte(line), '\n'))
 				}
 			}
-		}(session)
+		}(connection)
 	}
 }
 
